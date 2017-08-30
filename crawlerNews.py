@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import sys
 import time
 import random
 import json
@@ -101,25 +102,30 @@ def queryBaiduPage(site, url):
 def crawl(word, sites):
     DataList = []
     for site in sites:
-        print(site)
+        # print(site)
         query = "site:" + site + " title:" + word
         start = 0
         while start < 1000:
             url = "http://news.baidu.com/ns?tn=news&ie=utf-8&clk=sortbytime&rn=50&word=" + query + "&pn=" + str(start)
-            print("url", url)
+            # print("url", url)
             dataList = queryBaiduPage(site, url)
             DataList.extend(dataList)
             start = start + 50
-            print("start:", start)
+            # print("start:", start)
             time.sleep(round(random.random() * 2))
 
     return DataList
 
 
 if __name__ == "__main__":
-    word = "章莹颖"
-    sites = ["sina.com.cn", "163.com", "cctv.com", "sohu.com"]
+    # word = "章莹颖"
+    # sites = ["sina.com.cn", "163.com", "cctv.com", "sohu.com"]
     # sites = ["sina.com.cn"]
+    word = sys.argv[1]
+    sites = sys.argv[2: ]
+
+    # print(word, sites)
+
     siteStr = "_".join(sites).replace(".", "_")
     fileName = word + ' ' + siteStr + ' ' + time.strftime('%Y-%m-%d', time.localtime(time.time()))
     outputFile = open("data/" + fileName + ".json", "w", encoding="utf-8")
