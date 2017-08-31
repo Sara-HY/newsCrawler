@@ -116,19 +116,18 @@ def crawl(word, sites):
 
     return DataList
 
-
 if __name__ == "__main__":
     # word = "章莹颖"
     # sites = ["sina.com.cn", "163.com", "cctv.com", "sohu.com"]
     # sites = ["sina.com.cn"]
-    word = sys.argv[1]
-    sites = sys.argv[2: ]
+    filePath = sys.argv[1]
+    word = sys.argv[2]
 
-    # print(word, sites)
+    sites = sys.argv[3: ]
 
-    siteStr = "_".join(sites).replace(".", "_")
-    fileName = word + ' ' + siteStr + ' ' + time.strftime('%Y-%m-%d', time.localtime(time.time()))
-    outputFile = open("data/" + fileName + ".json", "w", encoding="utf-8")
+    print(word, sites)
+
+    outputFile = open(filePath, "w", encoding="utf-8")
 
     start = time.time()
 
@@ -137,8 +136,7 @@ if __name__ == "__main__":
     jsonData = json.dumps(dataList, ensure_ascii=False)
     outputFile.write(jsonData)
 
-
     end = time.time()
-
     print(end - start)
+    
     outputFile.close()
