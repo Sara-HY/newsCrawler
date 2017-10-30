@@ -1,42 +1,91 @@
+#!/usr/bin/env Python
 # coding=utf-8
 
 import sys
+import urllib
 import time
 import random
 import json
+import chardet
 from pyquery import PyQuery as pq
 
-
 def querySinaPage(url):
-    html = pq(url=url)
+    # print(url)
+    try:
+        page_src_string = urllib.request.urlopen(url).read()
+        charset = chardet.detect(page_src_string)["encoding"]
 
-    text = html(".article p").remove(".article-editor").text().encode("latin1").decode("utf-8", errors="replace")
-    text = "".join(text.split())
-    keywords = html(".article-keywords a").text().encode("latin1").decode("utf-8", errors="replace")
-    keywords = " ".join(keywords.split())
-    return (text, keywords)
-
+        if(charset == "utf-8"):
+            html = pq(url, encoding="utf-8")
+        else:
+            html = pq(url, encoding="gbk")
+        text = html(".article p").remove(".article-editor").text().encode('latin1').decode('utf8')
+        text = "".join(text.split())
+        # keywords = html(".article-keywords a").text().encode("latin1").decode("utf-8", errors="replace")
+        # keywords = " ".join(keywords.split())
+        return text
+    except urllib.error.HTTPError as err:
+        print("httperror: ", err)
+        return " "
+    except Exception as err:
+        # print("error: ", err)
+        text = html(".article p").remove(".article-editor").text()
+        return text
 
 def query163Page(url):
-    html = pq(url=url)
+    # print(url)
+    try:
+        page_src_string = urllib.request.urlopen(url).read()
+        charset = chardet.detect(page_src_string)["encoding"]
+        if(charset == "utf-8"):
+            html = pq(url, encoding="utf-8")
+        else:
+            html = pq(url, encoding="gbk")
 
-    text = html(".post_text p").remove("style").text()
-    text = " ".join(text.split())
-    return (text, "")
+        text = html(".post_text p").remove("style").text()
+        text = " ".join(text.split())
+        return text
+    except urllib.error.HTTPError as err:
+        print("httperror: ", err)
+        return " "
+
 
 def querySohuPage(url):
-    html = pq(url=url)
+    # print(url)
+    try:
+        page_src_string = urllib.request.urlopen(url).read()
+        charset = chardet.detect(page_src_string)["encoding"]
+        if (charset == "utf-8"):
+            html = pq(url, encoding="utf-8")
+        else:
+            html = pq(url, encoding="gbk")
 
-    text = html(".article p").remove(".backword").text()
-    text = " ".join(text.split())
-    return (text, "")
+        text = html(".article p").remove(".backword").text()
+        text = " ".join(text.split())
+        return text
+    except urllib.error.HTTPError as err:
+        print("httperror: ", err)
+        return " "
 
 def queryCctvPage(url):
-    html = pq(url=url)
+    try:
+        page_src_string = urllib.request.urlopen(url).read()
+        charset = chardet.detect(page_src_string)["encoding"]
+        if (charset == "utf-8"):
+            html = pq(url, encoding="utf-8")
+        else:
+            html = pq(url, encoding="gbk")
 
-    text = html(".cnt_bd").remove("h1").remove(".o-tit").remove(".function").remove("script").text().encode("latin1", 'ignore').decode("utf-8", errors="replace")
-    text = " ".join(text.split())
-    return (text, "")
+        text = html(".cnt_bd").remove("script").remove("style").remove("h1").remove(".o-tit").remove(".function").text()
+        text = " ".join(text.split())
+        return text
+    except urllib.error.HTTPError as err:
+        print("httperror: ", err)
+        return " "
+    except Exception as err:
+        # print("error: ", err)
+        text = html(".cnt_bd").remove("script").remove("style").remove("h1").remove(".o-tit").remove(".function").text()
+        return text
 
 
 def sitesType(site, url):
@@ -45,7 +94,7 @@ def sitesType(site, url):
         "sina.com.cn": querySinaPage,
         "sohu.com": querySohuPage,
         "cctv.com": queryCctvPage,
-    }.get(site, ("", ""))(url)
+    }.get(site, "")(url)
 
 
 def queryBaiduPage(site, url):
@@ -74,13 +123,16 @@ def queryBaiduPage(site, url):
                 newsSite = splitted[0]
                 timeStr = splitted[2]
 
-                if (timeStr.find(u"前") >= 0):
+                if (timeStr.find(u"小时前") >= 0):
                     hour = int(timeStr.replace(u"小时前", ""))
                     timeStamp = int(time.time()) - hour * 3600
+                elif(timeStr.find(u"分钟前") >= 0):
+                    min = int(timeStr.replace(u"分钟前", ""))
+                    timeStamp = int(time.time()) - min * 60
                 else:
                     timeStamp = int(time.mktime(time.strptime(timeStr, u"%Y年%m月%d日 %H:%M")))
 
-                (text, keywords) = sitesType(site, newsUrl)
+                text = sitesType(site, newsUrl)
                 if text == "":
                     text = title + " " + abstract
 
@@ -89,54 +141,61 @@ def queryBaiduPage(site, url):
                     "url": newsUrl,
                     "abstract": abstract,
                     "text": text,
-                    "keywords": keywords,
                     "site": newsSite,
                     "time": timeStamp * 1000
                 }
-
                 dataList.append(data)
 
     return dataList
 
 
-def crawl(word, sites):
+def crawl(word, pageNum, sites):
     DataList = []
     for site in sites:
-        # print(site)
+        print(site)
         query = "site:" + site + " title:" + word
         start = 0
-        while start < 1000:
-            url = "http://news.baidu.com/ns?tn=news&ie=utf-8&clk=sortbytime&rn=50&word=" + query + "&pn=" + str(start)
-            # print("url", url)
+        while start < int(pageNum):
+            url = "http://news.baidu.com/ns?tn=news&ie=utf-8&ct=0&rn=50&word=" + query + "&pn=" + str(start)
+            print("url", url)
             dataList = queryBaiduPage(site, url)
+
             DataList.extend(dataList)
             start = start + 50
-            # print("start:", start)
+            print("start:", start)
             time.sleep(round(random.random() * 2))
 
     return DataList
 
 if __name__ == "__main__":
-    # word = "章莹颖"
+    # word = "特朗普%2B金正恩"
+    word = "十九"
     # sites = ["sina.com.cn", "163.com", "cctv.com", "sohu.com"]
-    # sites = ["sina.com.cn"]
-    filePath = sys.argv[1]
-    word = sys.argv[2]
+    sites = ["sina.com.cn"]
+    pageNum = "800"
+    filePath = './data/十九大10-28sina-com-cn.json'
+    # filePath = sys.argv[1]
+    # word = sys.argv[2]
+    # pageNum = sys.argv[3]
+    # sites = sys.argv[4:]
 
-    sites = sys.argv[3: ]
-
-    print(word, sites)
+    print(word, pageNum, sites)
 
     outputFile = open(filePath, "w", encoding="utf-8")
 
     start = time.time()
 
     dataList = []
-    dataList = crawl(word, sites)
+    dataList = crawl(word, pageNum, sites)
+    print(len(dataList))
     jsonData = json.dumps(dataList, ensure_ascii=False)
     outputFile.write(jsonData)
 
     end = time.time()
     print(end - start)
-    
+
     outputFile.close()
+    #
+    # url = "http://news.cctv.com/2017/10/26/VIDEGjg7lhoVEvbY7EwXomyT171026.shtml"
+    # dataList = queryCctvPage(url)
+    # print(dataList)
