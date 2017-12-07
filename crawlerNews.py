@@ -14,12 +14,14 @@ def querySinaPage(url):
     try:
         page_src_string = urllib.request.urlopen(url).read()
         charset = chardet.detect(page_src_string)["encoding"]
-
         if(charset == "utf-8"):
             html = pq(url, encoding="utf-8")
-        else:
+        elif(charset == "gbk"):
             html = pq(url, encoding="gbk")
-        text = html(".article p").remove(".article-editor").text().encode('latin1').decode('utf8')
+        else:
+            return ''
+
+        text = html(".article p").remove(".article-editor").text().encode('latin1').decode('utf8', errors="replace")
         text = "".join(text.split())
         # keywords = html(".article-keywords a").text().encode("latin1").decode("utf-8", errors="replace")
         # keywords = " ".join(keywords.split())
@@ -169,11 +171,11 @@ def crawl(word, pageNum, sites):
 
 if __name__ == "__main__":
     # word = "特朗普%2B金正恩"
-    word = "十九"
-    # sites = ["sina.com.cn", "163.com", "cctv.com", "sohu.com"]
-    sites = ["sina.com.cn"]
-    pageNum = "800"
-    filePath = './data/十九大10-28sina-com-cn.json'
+    word = "红黄蓝"
+    sites = ["sina.com.cn", "163.com", "cctv.com", "sohu.com"]
+    # sites = ["sina.com.cn"]
+    pageNum = "300"
+    filePath = './data/红黄蓝11-28.json'
     # filePath = sys.argv[1]
     # word = sys.argv[2]
     # pageNum = sys.argv[3]
@@ -196,6 +198,3 @@ if __name__ == "__main__":
 
     outputFile.close()
     #
-    # url = "http://news.cctv.com/2017/10/26/VIDEGjg7lhoVEvbY7EwXomyT171026.shtml"
-    # dataList = queryCctvPage(url)
-    # print(dataList)
